@@ -1,0 +1,19 @@
+#include <SoftwareSerial.h>
+
+SoftwareSerial hc12(10, 11); // RX, TX
+
+void setup() {
+  Serial.begin(9600);
+  hc12.begin(9600);
+  Serial.println("TYPE AT");
+}
+
+void loop() {
+  if (Serial.available()) {
+    hc12.write(Serial.read());
+  }
+  if (hc12.available()) {
+    Serial.write(hc12.read());
+  }
+}
+//AT NEXT AT+C001
