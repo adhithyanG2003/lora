@@ -1,0 +1,91 @@
+//RECEIVER
+#include <SoftwareSerial.h>
+#include <LiquidCrystal_I2C.h>
+
+SoftwareSerial hc12(2, 3);          // RX, TX
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // LCD
+#define BUZZER 9
+
+#define SMOKE_THRESHOLD 600
+
+void setup() {
+  Serial.begin(9600);
+  hc12.begin(9600);
+
+  pinMode(BUZZER, OUTPUT);
+  digitalWrite(BUZZER, LOW);
+
+  lcd.begin();          // correct for your LCD library
+  lcd.backlight();
+
+  lcd.setCursor(0,0);
+  lcd.print("Conecting.......");
+}
+
+void loop() {
+  if (hc12.available()) {
+    String data = hc12.readStringUntil('\n');
+    Serial.println(data);
+
+    int smoke, b1, b2, b3, b4;
+    int temp, hum;
+
+    sscanf(data.c_str(), "%d,%d,%d,%d,%d,%d,%d",
+           &smoke, &b1, &b2, &b3, &b4, &temp, &hum);
+
+    lcd.clear();
+
+    // ---------- LCD LINE 1 ----------
+    lcd.setCursor(0,0);
+    lcd.print("T:");
+    lcd.print(temp);
+    lcd.print("C ");
+
+    lcd.print("H:");
+    lcd.print(hum);
+    lcd.print("%");
+
+    // ---------- BUZZER LOGIC ----------
+    if (smoke > SMOKE_THRESHOLD) {
+      // Continuous alarm for smoke
+      digitalWrite(BUZZER, HIGH);
+    } else {
+      digitalWrite(BUZZER, LOW);
+    }
+
+    // ---------- LCD LINE 2 + ONE BEEP ----------
+    lcd.setCursor(0,1);
+
+    if (b1 == 1) {
+      lcd.print("----HELP ME----");
+      oneBeep();
+    }
+    else if (b2 == 1) {
+      lcd.print("HEALTH EMERGENCY");
+      oneBeep();
+    }
+    else if (b3 == 1) {
+      lcd.print("---FIRE ALERT---");
+      oneBeep();
+    }
+    else if (b4 == 1) {
+      lcd.print("--ENGINE FAULT--");
+      oneBeep();
+    }
+    else if (smoke > SMOKE_THRESHOLD) {
+      lcd.print("FUEL EMERGENCY");
+    }
+    else {
+      lcd.print("---CONNECTED---");
+    }
+  }
+}
+
+// ---------- ONE SHORT BEEP ----------
+void oneBeep() {
+  if (digitalRead(BUZZER) == LOW) {   // avoid conflict with smoke alarm
+    digitalWrite(BUZZER, HIGH);
+    delay(200);
+    digitalWrite(BUZZER, LOW);
+  }
+}
